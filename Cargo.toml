@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 libc = "0.2.169"
+regex = "1.11.1"
 
 [profile.release]
 debug = true
