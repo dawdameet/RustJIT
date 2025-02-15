@@ -3,8 +3,6 @@ use libc::{mmap, mprotect, munmap, MAP_ANON, MAP_PRIVATE, PROT_EXEC, PROT_READ, 
 use std::io::{self, Write};
 use std::collections::VecDeque;
 use regex::Regex;
-
-// Function to convert infix expression to postfix (Shunting Yard Algorithm)
 fn infix_to_postfix(expression: &str) -> Vec<String> {
     let mut output = Vec::new();
     let mut operators = VecDeque::new();
@@ -13,7 +11,6 @@ fn infix_to_postfix(expression: &str) -> Vec<String> {
         "+" | "-" => 1,
         _ => 0,
     };
-    
     let re = Regex::new(r"\d+|[()+\-*/]").unwrap();
     for token in re.find_iter(expression) {
         let token = token.as_str();
@@ -40,17 +37,13 @@ fn infix_to_postfix(expression: &str) -> Vec<String> {
             _ => output.push(token.to_string()),
         }
     }
-    
     while let Some(op) = operators.pop_back() {
         output.push(op);
     }
     output
 }
-
-// Function to generate machine code dynamically
 fn generate_machine_code(postfix: &[String]) -> Vec<u8> {
     let mut code = vec![];
-    
     for token in postfix {
         match token.as_str() {
             "+" => {
@@ -72,23 +65,17 @@ fn generate_machine_code(postfix: &[String]) -> Vec<u8> {
             }
         }
     }
-    
     code.extend(&[0x58, 0xC3]); // pop rax, ret
     code
 }
-
 fn main() {
     print!("Enter an arithmetic expression: ");
     io::stdout().flush().unwrap();
-    
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     let input = input.trim();
-    
     let postfix = infix_to_postfix(input);
     let code = generate_machine_code(&postfix);
-    
-    // Allocate executable memory
     let mem = unsafe {
         mmap(
             std::ptr::null_mut(),
@@ -99,23 +86,15 @@ fn main() {
             0,
         )
     } as *mut u8;
-    
     if mem.is_null() {
         panic!("Failed to allocate memory");
     }
-    
     unsafe {
         std::ptr::copy_nonoverlapping(code.as_ptr(), mem, code.len());
         mprotect(mem as *mut _, code.len(), PROT_EXEC); // Make it executable
     }
-    
-    // Cast the memory to a function pointer
     let jit_fn: extern "C" fn() -> i32 = unsafe { mem::transmute(mem) };
-    
-    // Execute the JIT-compiled function
     let result = jit_fn();
     println!("JIT-compiled function returned: {}", result);
-    
-    // Cleanup
     unsafe { munmap(mem as *mut _, code.len()) };
 }
